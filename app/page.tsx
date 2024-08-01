@@ -50,7 +50,7 @@ const Whiteboard = () => {
   const storePost = async (post) => {
     try {
       const response = await axios.post(
-        "http://localhost:8443/api/new",
+        "https://sellitboard.com:8443/api/new",
         post
       );
       console.log("post stored successfully:", response.data);
@@ -62,7 +62,7 @@ const Whiteboard = () => {
   async function fetchBoard() {
     try {
       const response = await axios.get(
-        "http://localhost:8443/api/boards"
+        "https://sellitboard.com/api/boards"
       );
       setPosts(response.data);
     } catch (error) {
