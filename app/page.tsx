@@ -67,6 +67,30 @@ const Whiteboard = () => {
 
   useEffect(() => {
     fetchBoard();
+
+    // Connect to WebSocket
+    const socket = new WebSocket("wss://sellitboard.com:8443");
+
+    socket.onopen = () => {
+      console.log("WebSocket connection established");
+    };
+
+    socket.onmessage = (event) => {
+      console.log("Message from server:", event.data);
+      // Handle incoming messages
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    return () => {
+      socket.close(); // Clean up on component unmount
+    };
   }, []);
 
   useEffect(() => {
@@ -139,9 +163,9 @@ const Whiteboard = () => {
             y: projectY + viewportTransform.y,
           };
           setProjects((prevProjects) => [...prevProjects, project]);
+          setIsAddingProject(false);
           storeProject(project).then(() => {
             setNewProject({ title: "", description: "" });
-            setIsAddingProject(false);
 
             setCursor("default");
           }).catch((error) => {
