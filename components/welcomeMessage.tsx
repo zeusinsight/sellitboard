@@ -20,10 +20,7 @@ const WelcomeMessage = () => (
         <Layers className="mr-3 text-blue-500" size={36} />
         Welcome to SellitBoard
       </h1>
-      <p className="text-xl text-gray-700 flex items-center">
-        <Sparkles className="mr-2 text-yellow-500" size={24} />
-        Create and organize your projects with ease!
-      </p>
+
     </div>
   );
 

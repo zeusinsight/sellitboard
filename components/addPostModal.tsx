@@ -18,17 +18,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-const AddProjectModal = ({
+const AddPostModal = ({
   isOpen,
   onOpenChange,
-  newProject,
-  setNewProject,
-  onAddProject,
+  newPost,
+  setNewPost,
+  onAddPost,
 }) => (
   <Dialog open={isOpen} onOpenChange={onOpenChange}>
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Add New Project</DialogTitle>
+        <DialogTitle>Add New Post</DialogTitle>
       </DialogHeader>
       <div className="grid gap-4 py-4">
         <div className="grid grid-cols-4 items-center gap-4">
@@ -37,9 +37,9 @@ const AddProjectModal = ({
           </Label>
           <Input
             id="title"
-            value={newProject.title}
+            value={newPost.title}
             onChange={(e) =>
-              setNewProject({ ...newProject, title: e.target.value })
+              setNewPost({ ...newPost, title: e.target.value })
             }
             className="col-span-3"
           />
@@ -50,19 +50,19 @@ const AddProjectModal = ({
           </Label>
           <Input
             id="description"
-            value={newProject.description}
+            value={newPost.description}
             onChange={(e) =>
-              setNewProject({ ...newProject, description: e.target.value })
+              setNewPost({ ...newPost, description: e.target.value })
             }
             className="col-span-3"
           />
         </div>
       </div>
       <DialogFooter>
-        <Button onClick={onAddProject}>Add Project</Button>
+        <Button onClick={onAddPost}>Add post</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 );
 
-export default AddProjectModal;
+export default AddPostModal;

@@ -11,8 +11,8 @@ const ControlButtons = ({
     onZoomIn,
     onZoomOut,
     onReset,
-    onAddProject,
-    isAddingProject,
+    onAddPost,
+    isAddingPost,
   }) => (
     <div className="fixed bottom-6 right-6 flex flex-col space-y-3">
       <button
@@ -36,19 +36,19 @@ const ControlButtons = ({
       </button>
       <button
         className={`px-4 py-3 ${
-          isAddingProject
+          isAddingPost
             ? "bg-yellow-500 hover:bg-yellow-600"
             : "bg-green-500 hover:bg-green-600"
         } text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center`}
-        onClick={onAddProject}
+        onClick={onAddPost}
       >
-        {isAddingProject ? (
+        {isAddingPost ? (
           <>
             <MousePointerClick size={18} className="mr-2" />
             <span className="text-sm font-medium">Place</span>
           </>
         ) : (
-          <span className="text-sm font-medium">Add Project</span>
+          <span className="text-sm font-medium">Add Post</span>
         )}
       </button>
     </div>

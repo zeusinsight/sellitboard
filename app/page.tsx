@@ -22,20 +22,20 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 import WelcomeMessage from "./../components/welcomeMessage";
-import ProjectList from "@/components/projectList";
-import ProjectPreview from "@/components/projectPreview";
+import PostList from "@/components/postList";
+import PostPreview from "@/components/postPreview";
 import ControlButtons from "@/components/controlButtons";
-import AddProjectModal from "@/components/addProjectModal";
+import AddPostModal from "@/components/addPostModal";
 
 const BOARD_SIZE = { width: 250000, height: 250000 };
-const PROJECT_SIZE = { width: 200, height: 100 };
+const POST_SIZE = { width: 200, height: 100 };
 
 const Whiteboard = () => {
-  const [projects, setProjects] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newProject, setNewProject] = useState({ title: "", description: "" });
+  const [newPost, setNewPost] = useState({ title: "", description: "" });
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
-  const [isAddingProject, setIsAddingProject] = useState(false);
+  const [isAddingPost, setIsAddingPost] = useState(false);
   const [viewportTransform, setViewportTransform] = useState({
     x: 0,
     y: 0,
@@ -47,15 +47,15 @@ const Whiteboard = () => {
 
   const boardRef = useRef(null);
 
-  const storeProject = async (project) => {
+  const storePost = async (post) => {
     try {
       const response = await axios.post(
         "https://sellitboard.com:8443/api/new",
-        project
+        post
       );
-      console.log("Project stored successfully:", response.data);
+      console.log("post stored successfully:", response.data);
     } catch (error) {
-      console.error("Error storing project:", error);
+      console.error("Error storing post:", error);
     }
   };
 
@@ -64,7 +64,7 @@ const Whiteboard = () => {
       const response = await axios.get(
         "https://sellitboard.com:8443/api/boards"
       );
-      setProjects(response.data);
+      setPosts(response.data);
     } catch (error) {
       console.error("Error fetching board:", error);
     }
@@ -84,7 +84,7 @@ const Whiteboard = () => {
     socket.onmessage = (event) => {
       console.log("Message from server:", event.data);
       const data = JSON.parse(event.data);
-      setProjects((prevProjects) => [...prevProjects, data]);
+      setPosts((prevPosts) => [...prevPosts, data]);
     };
 
     socket.onerror = (error) => {
@@ -137,60 +137,60 @@ const Whiteboard = () => {
     [viewportTransform]
   );
 
-  const startAddingProject = () => setIsModalOpen(true);
+  const startAddingPost = () => setIsModalOpen(true);
 
-  const handleAddProject = useCallback(() => {
-    if (newProject.title && newProject.description) {
-      setIsAddingProject(true);
+  const handleAddPost = useCallback(() => {
+    if (newPost.title && newPost.description) {
+      setIsAddingPost(true);
       setIsModalOpen(false);
       setCursor("default");
     }
-  }, [newProject]);
+  }, [newPost]);
 
   const handleBoardClick = useCallback(
     async (e) => {
-      if (isAddingProject && e.button === 0) {
+      if (isAddingPost && e.button === 0) {
         const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
-        const projectX = x - PROJECT_SIZE.width / 2;
-        const projectY = y - PROJECT_SIZE.height / 2;
+        const postX = x - POST_SIZE.width / 2;
+        const postY = y - POST_SIZE.height / 2;
 
-        const isOverlapping = projects.some(
-          (project) =>
-            projectX < project.x + PROJECT_SIZE.width &&
-            projectX + PROJECT_SIZE.width > project.x &&
-            projectY < project.y + PROJECT_SIZE.height &&
-            projectY + PROJECT_SIZE.height > project.y
+        const isOverlapping = posts.some(
+          (post) =>
+            postX < post.x + POST_SIZE.width &&
+            postX + POST_SIZE.width > post.x &&
+            postY < post.y + POST_SIZE.height &&
+            postY + POST_SIZE.height > post.y
         );
 
         if (!isOverlapping) {
-          const project = {
+          const post = {
             id: Date.now(),
-            ...newProject,
-            x: projectX + viewportTransform.x,
-            y: projectY + viewportTransform.y,
+            ...newPost,
+            x: postX + viewportTransform.x,
+            y: postY + viewportTransform.y,
           };
-          setProjects((prevProjects) => [...prevProjects, project]);
-          setIsAddingProject(false);
-          storeProject(project)
+          setPosts((prevPosts) => [...prevPosts, post]);
+          setIsAddingPost(false);
+          storePost(post)
             .then(() => {
-              setNewProject({ title: "", description: "" });
+              setNewPost({ title: "", description: "" });
 
               setCursor("default");
             })
             .catch((error) => {
-              console.error("Error storing project:", error);
+              console.error("Error storing post:", error);
             });
         } else {
-          console.log("Cannot place project here due to overlap");
+          console.log("Cannot place post here due to overlap");
         }
       }
     },
     [
-      isAddingProject,
+      isAddingPost,
       screenToBoardCoordinates,
-      projects,
+      posts,
       viewportTransform,
-      newProject,
+      newPost,
     ]
   );
 
@@ -216,17 +216,17 @@ const Whiteboard = () => {
         setLastMousePos({ x: e.clientX, y: e.clientY });
       }
 
-      if (isAddingProject) {
+      if (isAddingPost) {
         const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
         setPreviewPosition({
-          x: x - PROJECT_SIZE.width / 2 + viewportTransform.x,
-          y: y - PROJECT_SIZE.height / 2 + viewportTransform.y,
+          x: x - POST_SIZE.width / 2 + viewportTransform.x,
+          y: y - POST_SIZE.height / 2 + viewportTransform.y,
         });
       }
     },
     [
       isPanning,
-      isAddingProject,
+      isAddingPost,
       screenToBoardCoordinates,
       viewportTransform,
       lastMousePos,
@@ -237,10 +237,10 @@ const Whiteboard = () => {
     (e) => {
       if (e.button === 1) {
         setIsPanning(false);
-        setCursor(isAddingProject ? "crosshair" : "default");
+        setCursor(isAddingPost ? "crosshair" : "default");
       }
     },
-    [isAddingProject]
+    [isAddingPost]
   );
 
   const handleWheel = useCallback((e) => {
@@ -358,11 +358,11 @@ const Whiteboard = () => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <WelcomeMessage />
-        <ProjectList projects={projects} projectSize={PROJECT_SIZE} />
-        <ProjectPreview
-          isAddingProject={isAddingProject}
+        <PostList posts={posts} postSize={POST_SIZE} />
+        <PostPreview
+          isAddingPost={isAddingPost}
           previewPosition={previewPosition}
-          projectSize={PROJECT_SIZE}
+          postSize={POST_SIZE}
         />
       </div>
       <ControlButtons
@@ -379,15 +379,15 @@ const Whiteboard = () => {
           }))
         }
         onReset={resetViewport}
-        onAddProject={startAddingProject}
-        isAddingProject={isAddingProject}
+        onAddPost={startAddingPost}
+        isAddingPost={isAddingPost}
       />
-      <AddProjectModal
+      <AddPostModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
-        newProject={newProject}
-        setNewProject={setNewProject}
-        onAddProject={handleAddProject}
+        newPost={newPost}
+        setNewPost={setNewPost}
+        onAddPost={handleAddPost}
       />
     </div>
   );
