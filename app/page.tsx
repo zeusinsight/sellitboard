@@ -49,7 +49,10 @@ const Whiteboard = () => {
 
   const storeProject = async (project) => {
     try {
-      const response = await axios.post("https://sellitboard.com:8443/api/new", project);
+      const response = await axios.post(
+        "https://sellitboard.com:8443/api/new",
+        project
+      );
       console.log("Project stored successfully:", response.data);
     } catch (error) {
       console.error("Error storing project:", error);
@@ -58,7 +61,9 @@ const Whiteboard = () => {
 
   async function fetchBoard() {
     try {
-      const response = await axios.get("https://sellitboard.com:8443/api/boards");
+      const response = await axios.get(
+        "https://sellitboard.com:8443/api/boards"
+      );
       setProjects(response.data);
     } catch (error) {
       console.error("Error fetching board:", error);
@@ -73,11 +78,13 @@ const Whiteboard = () => {
 
     socket.onopen = () => {
       console.log("WebSocket connection established");
+      
     };
 
     socket.onmessage = (event) => {
       console.log("Message from server:", event.data);
-      // Handle incoming messages
+      const data = JSON.parse(event.data);
+      setProjects((prevProjects) => [...prevProjects, data]);
     };
 
     socket.onerror = (error) => {
@@ -164,13 +171,15 @@ const Whiteboard = () => {
           };
           setProjects((prevProjects) => [...prevProjects, project]);
           setIsAddingProject(false);
-          storeProject(project).then(() => {
-            setNewProject({ title: "", description: "" });
+          storeProject(project)
+            .then(() => {
+              setNewProject({ title: "", description: "" });
 
-            setCursor("default");
-          }).catch((error) => {
-            console.error("Error storing project:", error);
-          });
+              setCursor("default");
+            })
+            .catch((error) => {
+              console.error("Error storing project:", error);
+            });
         } else {
           console.log("Cannot place project here due to overlap");
         }
