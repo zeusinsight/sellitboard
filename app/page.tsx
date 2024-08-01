@@ -62,7 +62,7 @@ const Whiteboard = () => {
   async function fetchBoard() {
     try {
       const response = await axios.get(
-        "https://sellitboard.com/api/boards"
+        "https://sellitboard.com:8443/api/boards"
       );
       setPosts(response.data);
     } catch (error) {
