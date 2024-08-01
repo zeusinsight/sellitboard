@@ -49,7 +49,7 @@ const Whiteboard = () => {
 
   const storeProject = async (project) => {
     try {
-      const response = await axios.post("https://sellitboard:8443/api/new", project);
+      const response = await axios.post("https://sellitboard.com:8443/api/new", project);
       console.log("Project stored successfully:", response.data);
     } catch (error) {
       console.error("Error storing project:", error);
@@ -58,7 +58,7 @@ const Whiteboard = () => {
 
   async function fetchBoard() {
     try {
-      const response = await axios.get("https://sellitboard:8443/api/boards");
+      const response = await axios.get("https://sellitboard.com:8443/api/boards");
       setProjects(response.data);
     } catch (error) {
       console.error("Error fetching board:", error);
@@ -142,6 +142,7 @@ const Whiteboard = () => {
           storeProject(project).then(() => {
             setNewProject({ title: "", description: "" });
             setIsAddingProject(false);
+
             setCursor("default");
           }).catch((error) => {
             console.error("Error storing project:", error);
