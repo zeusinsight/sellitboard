@@ -28,12 +28,12 @@ import ControlButtons from "@/components/controlButtons";
 import AddPostModal from "@/components/addPostModal";
 
 const BOARD_SIZE = { width: 250000, height: 250000 };
-const POST_SIZE = { width: 200, height: 100 };
+const POST_SIZE = { width: 350, height: 70 };
 
 const Whiteboard = () => {
   const [posts, setPosts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newPost, setNewPost] = useState({ title: "", description: "" });
+  const [newPost, setNewPost] = useState({ title: "", description: "", type: "", limitTimestamp: 0 });
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
   const [isAddingPost, setIsAddingPost] = useState(false);
   const [viewportTransform, setViewportTransform] = useState({
@@ -50,7 +50,7 @@ const Whiteboard = () => {
   const storePost = async (post) => {
     try {
       const response = await axios.post(
-        "https://sellitboard.com:8443/api/new",
+        "http://localhost:8443/api/new",
         post
       );
       console.log("post stored successfully:", response.data);
@@ -62,7 +62,7 @@ const Whiteboard = () => {
   async function fetchBoard() {
     try {
       const response = await axios.get(
-        "https://sellitboard.com:8443/api/boards"
+        "http://localhost:8443/api/boards"
       );
       setPosts(response.data);
     } catch (error) {
@@ -74,7 +74,7 @@ const Whiteboard = () => {
     fetchBoard();
 
     // Connect to WebSocket
-    const socket = new WebSocket("wss://sellitboard.com:8443");
+    const socket = new WebSocket("wss://localhost:8443");
 
     socket.onopen = () => {
       console.log("WebSocket connection established");
