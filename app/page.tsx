@@ -29,11 +29,6 @@ import AddProjectModal from "@/components/addProjectModal";
 
 const BOARD_SIZE = { width: 250000, height: 250000 };
 const PROJECT_SIZE = { width: 200, height: 100 };
-const INITIAL_VIEWPORT = {
-  x: -25000 + window.innerWidth / 2,
-  y: -25000 + window.innerHeight / 2,
-  scale: 1,
-};
 
 const Whiteboard = () => {
   const [projects, setProjects] = useState([]);
@@ -41,7 +36,11 @@ const Whiteboard = () => {
   const [newProject, setNewProject] = useState({ title: "", description: "" });
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
   const [isAddingProject, setIsAddingProject] = useState(false);
-  const [viewportTransform, setViewportTransform] = useState(INITIAL_VIEWPORT);
+  const [viewportTransform, setViewportTransform] = useState({
+    x: 0,
+    y: 0,
+    scale: 1,
+  });
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [cursor, setCursor] = useState("default");
@@ -50,7 +49,6 @@ const Whiteboard = () => {
 
   const storeProject = async (project) => {
     try {
-
       const response = await axios.post("https://sellitboard:8443/api/new", project);
       console.log("Project stored successfully:", response.data);
     } catch (error) {
@@ -71,8 +69,26 @@ const Whiteboard = () => {
     fetchBoard();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const INITIAL_VIEWPORT = {
+        x: -25000 + window.innerWidth / 2,
+        y: -25000 + window.innerHeight / 2,
+        scale: 1,
+      };
+      setViewportTransform(INITIAL_VIEWPORT);
+    }
+  }, []);
+
   const resetViewport = useCallback(() => {
-    setViewportTransform(INITIAL_VIEWPORT);
+    if (typeof window !== "undefined") {
+      const INITIAL_VIEWPORT = {
+        x: -25000 + window.innerWidth / 2,
+        y: -25000 + window.innerHeight / 2,
+        scale: 1,
+      };
+      setViewportTransform(INITIAL_VIEWPORT);
+    }
   }, []);
 
   const screenToBoardCoordinates = useCallback(
@@ -224,9 +240,11 @@ const Whiteboard = () => {
   }, []);
 
   useEffect(() => {
-    const board = boardRef.current;
-    board.addEventListener("wheel", handleWheel, { passive: false });
-    return () => board.removeEventListener("wheel", handleWheel);
+    if (typeof window !== "undefined") {
+      const board = boardRef.current;
+      board.addEventListener("wheel", handleWheel, { passive: false });
+      return () => board.removeEventListener("wheel", handleWheel);
+    }
   }, [handleWheel]);
 
   useEffect(() => {
@@ -241,16 +259,23 @@ const Whiteboard = () => {
   }, []);
 
   useEffect(() => {
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("wheel", handleWheel, { passive: false });
+    const handleWindowEvents = (e) => {
+      if (e.type === "mousedown") handleMouseDown(e);
+      if (e.type === "mousemove") handleMouseMove(e);
+      if (e.type === "mouseup") handleMouseUp(e);
+      if (e.type === "wheel") handleWheel(e);
+    };
+
+    window.addEventListener("mousedown", handleWindowEvents);
+    window.addEventListener("mousemove", handleWindowEvents);
+    window.addEventListener("mouseup", handleWindowEvents);
+    window.addEventListener("wheel", handleWindowEvents, { passive: false });
 
     return () => {
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("mousedown", handleWindowEvents);
+      window.removeEventListener("mousemove", handleWindowEvents);
+      window.removeEventListener("mouseup", handleWindowEvents);
+      window.removeEventListener("wheel", handleWindowEvents);
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel]);
 
