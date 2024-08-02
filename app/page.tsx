@@ -86,8 +86,13 @@ const Whiteboard = () => {
     socket.onmessage = (event) => {
       console.log("Message from server:", event.data);
       const data = JSON.parse(event.data);
-      setPosts((prevPosts) => [...prevPosts, data]);
-    };
+
+    setPosts((prevPosts) => {
+        if (!prevPosts.some(post => post.id === data.id)) {
+            return [...prevPosts, data];
+        }
+        return prevPosts; // Return unchanged if post exists
+    });    };
 
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
@@ -142,7 +147,6 @@ const Whiteboard = () => {
   const startAddingPost = () => setIsModalOpen(true);
 
   const handleAddPost = useCallback(() => {
-    console.log(newPost)
     switch (newPost.type) {
       case "TEXT": {
         if (newPost.description) {
@@ -154,7 +158,6 @@ const Whiteboard = () => {
       }
       case "CARD": {
         if (newPost.cardTitle && newPost.description) {
-          console.log("HERE")
           setIsAddingPost(true);
           setIsModalOpen(false);
           setCursor("default");

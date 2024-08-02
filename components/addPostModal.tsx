@@ -100,7 +100,9 @@ const AddPostModal = ({
     if (selectedType === "CARD") {
       setNewPost((prev) => ({ ...prev, cardTitle: "", cardImage: null }));
     }
+    
   }, [selectedType]);
+
 
   const handleTypeChange = (value) => {
     setSelectedType(value);
