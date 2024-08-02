@@ -1,6 +1,6 @@
 //@ts-nocheck
 "use client";
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   PlusIcon,
@@ -14,13 +14,12 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogcardTitle,
+  DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-
 import WelcomeMessage from "./../components/welcomeMessage";
 import PostList from "@/components/postList";
 import PostPreview from "@/components/postPreview";
@@ -61,7 +60,7 @@ const Whiteboard = () => {
     }
   };
 
-  async function fetchBoard() {
+  const fetchBoard = useCallback(async () => {
     try {
       const response = await axios.get(
         "https://sellitboard.com:8443/api/boards"
@@ -70,29 +69,26 @@ const Whiteboard = () => {
     } catch (error) {
       console.error("Error fetching board:", error);
     }
-  }
+  }, []);
 
   useEffect(() => {
     fetchBoard();
 
-    // Connect to WebSocket
     const socket = new WebSocket("wss://sellitboard.com:8443");
 
     socket.onopen = () => {
       console.log("WebSocket connection established");
-      
     };
 
     socket.onmessage = (event) => {
-      console.log("Message from server:", event.data);
       const data = JSON.parse(event.data);
-
-    setPosts((prevPosts) => {
-        if (!prevPosts.some(post => post.id === data.id)) {
-            return [...prevPosts, data];
+      setPosts((prevPosts) => {
+        if (!prevPosts.some((post) => post.id === data.id)) {
+          return [...prevPosts, data];
         }
-        return prevPosts; // Return unchanged if post exists
-    });    };
+        return prevPosts;
+      });
+    };
 
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
@@ -103,9 +99,9 @@ const Whiteboard = () => {
     };
 
     return () => {
-      socket.close(); // Clean up on component unmount
+      socket.close();
     };
-  }, []);
+  }, [fetchBoard]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -148,32 +144,28 @@ const Whiteboard = () => {
 
   const handleAddPost = useCallback(() => {
     switch (newPost.type) {
-      case "TEXT": {
+      case "TEXT":
         if (newPost.description) {
           setIsAddingPost(true);
           setIsModalOpen(false);
-          setCursor("default");
+          setCursor("pointer");
         }
         break;
-      }
-      case "CARD": {
+      case "CARD":
         if (newPost.cardTitle && newPost.description) {
           setIsAddingPost(true);
           setIsModalOpen(false);
-          setCursor("default");
+          setCursor("pointer");
         }
         break;
-      }
-      case "IMAGE": {
+      case "IMAGE":
         if (newPost.cardImage) {
           setIsAddingPost(true);
           setIsModalOpen(false);
-          setCursor("default");
+          setCursor("pointer");
         }
         break;
-      }
     }
-
   }, [newPost]);
 
   const handleBoardClick = useCallback(
@@ -218,7 +210,6 @@ const Whiteboard = () => {
           storePost(post)
             .then(() => {
               setNewPost({ cardTitle: "", description: "" });
-
               setCursor("default");
             })
             .catch((error) => {
@@ -246,7 +237,7 @@ const Whiteboard = () => {
       e.preventDefault();
       setIsPanning(true);
       setLastMousePos({ x: e.clientX, y: e.clientY });
-      setCursor("grab");
+      setCursor("grabbing");
     }
   }, []);
 
@@ -268,11 +259,9 @@ const Whiteboard = () => {
         let postSize = TEXT_POST_SIZE;
         if (newPost.type === "CARD") {
           postSize = CARD_POST_SIZE;
-          console.log("POST SIZE CARD")
         } else if (newPost.type === "IMAGE") {
           postSize = IMAGE_POST_SIZE;
         }
-        
         setPreviewPosition({
           x: x - postSize.width / 2 + viewportTransform.x,
           y: y - postSize.height / 2 + viewportTransform.y,
@@ -283,8 +272,8 @@ const Whiteboard = () => {
       isPanning,
       isAddingPost,
       screenToBoardCoordinates,
-      viewportTransform,
       lastMousePos,
+      viewportTransform,
     ]
   );
 
@@ -304,10 +293,7 @@ const Whiteboard = () => {
     setViewportTransform((vt) => {
       if (e.ctrlKey) {
         const scaleChange = -e.deltaY * 0.001;
-        const newScale = Math.min(
-          Math.max(vt.scale * (1 + scaleChange), 0.1),
-          5
-        );
+        const newScale = Math.min(Math.max(vt.scale * (1 + scaleChange), 0.1), 5);
         const scaleRatio = newScale / vt.scale;
 
         const mouseX = e.clientX;
@@ -329,11 +315,9 @@ const Whiteboard = () => {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const board = boardRef.current;
-      board.addEventListener("wheel", handleWheel, { passive: false });
-      return () => board.removeEventListener("wheel", handleWheel);
-    }
+    const board = boardRef.current;
+    board.addEventListener("wheel", handleWheel, { passive: false });
+    return () => board.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
   useEffect(() => {
@@ -413,8 +397,7 @@ const Whiteboard = () => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <WelcomeMessage />
-        <PostList posts={posts} 
- />
+        <PostList posts={posts} />
         <PostPreview
           isAddingPost={isAddingPost}
           previewPosition={previewPosition}
