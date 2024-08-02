@@ -4,9 +4,8 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "imagedelivery.net",
+        hostname: "myreplyai.com",
         port: "",
-        pathname: "/aPLKZhi80l02c7g2O1mdfg/**",
       },
     ],
   },
