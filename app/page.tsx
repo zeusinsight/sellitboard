@@ -14,7 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
+  DialogcardTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,12 +28,14 @@ import ControlButtons from "@/components/controlButtons";
 import AddPostModal from "@/components/addPostModal";
 
 const BOARD_SIZE = { width: 250000, height: 250000 };
-const POST_SIZE = { width: 350, height: 70 };
+const TEXT_POST_SIZE = { width: 350, height: 70 };
+const CARD_POST_SIZE = { width: 200, height: 190 };
+const IMAGE_POST_SIZE = { width: 230, height: 190 };
 
 const Whiteboard = () => {
   const [posts, setPosts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newPost, setNewPost] = useState({ title: "", description: "", type: "", limitTimestamp: 0 });
+  const [newPost, setNewPost] = useState({ cardTitle: "", description: "", type: "TEXT", limitTimestamp: 0 });
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
   const [isAddingPost, setIsAddingPost] = useState(false);
   const [viewportTransform, setViewportTransform] = useState({
@@ -74,7 +76,7 @@ const Whiteboard = () => {
     fetchBoard();
 
     // Connect to WebSocket
-    const socket = new WebSocket("wss://localhost:8443");
+    const socket = new WebSocket("wss://sellitboard.com:8443");
 
     socket.onopen = () => {
       console.log("WebSocket connection established");
@@ -140,26 +142,65 @@ const Whiteboard = () => {
   const startAddingPost = () => setIsModalOpen(true);
 
   const handleAddPost = useCallback(() => {
-    if (newPost.title && newPost.description) {
-      setIsAddingPost(true);
-      setIsModalOpen(false);
-      setCursor("default");
+    console.log(newPost)
+    switch (newPost.type) {
+      case "TEXT": {
+        if (newPost.description) {
+          setIsAddingPost(true);
+          setIsModalOpen(false);
+          setCursor("default");
+        }
+        break;
+      }
+      case "CARD": {
+        if (newPost.cardTitle && newPost.description) {
+          console.log("HERE")
+          setIsAddingPost(true);
+          setIsModalOpen(false);
+          setCursor("default");
+        }
+        break;
+      }
+      case "IMAGE": {
+        if (newPost.cardImage) {
+          setIsAddingPost(true);
+          setIsModalOpen(false);
+          setCursor("default");
+        }
+        break;
+      }
     }
+
   }, [newPost]);
 
   const handleBoardClick = useCallback(
     async (e) => {
       if (isAddingPost && e.button === 0) {
         const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
-        const postX = x - POST_SIZE.width / 2;
-        const postY = y - POST_SIZE.height / 2;
+        let postSize;
+        switch (newPost.type) {
+          case "TEXT":
+            postSize = TEXT_POST_SIZE;
+            break;
+          case "CARD":
+            postSize = CARD_POST_SIZE;
+            break;
+          case "IMAGE":
+            postSize = IMAGE_POST_SIZE;
+            break;
+          default:
+            console.error("Unknown post type");
+            return;
+        }
+        const postX = x - postSize.width / 2;
+        const postY = y - postSize.height / 2;
 
         const isOverlapping = posts.some(
           (post) =>
-            postX < post.x + POST_SIZE.width &&
-            postX + POST_SIZE.width > post.x &&
-            postY < post.y + POST_SIZE.height &&
-            postY + POST_SIZE.height > post.y
+            postX < post.x + postSize.width &&
+            postX + postSize.width > post.x &&
+            postY < post.y + postSize.height &&
+            postY + postSize.height > post.y
         );
 
         if (!isOverlapping) {
@@ -173,7 +214,7 @@ const Whiteboard = () => {
           setIsAddingPost(false);
           storePost(post)
             .then(() => {
-              setNewPost({ title: "", description: "" });
+              setNewPost({ cardTitle: "", description: "" });
 
               setCursor("default");
             })
@@ -191,6 +232,9 @@ const Whiteboard = () => {
       posts,
       viewportTransform,
       newPost,
+      TEXT_POST_SIZE,
+      CARD_POST_SIZE,
+      IMAGE_POST_SIZE,
     ]
   );
 
@@ -218,9 +262,17 @@ const Whiteboard = () => {
 
       if (isAddingPost) {
         const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
+        let postSize = TEXT_POST_SIZE;
+        if (newPost.type === "CARD") {
+          postSize = CARD_POST_SIZE;
+          console.log("POST SIZE CARD")
+        } else if (newPost.type === "IMAGE") {
+          postSize = IMAGE_POST_SIZE;
+        }
+        
         setPreviewPosition({
-          x: x - POST_SIZE.width / 2 + viewportTransform.x,
-          y: y - POST_SIZE.height / 2 + viewportTransform.y,
+          x: x - postSize.width / 2 + viewportTransform.x,
+          y: y - postSize.height / 2 + viewportTransform.y,
         });
       }
     },
@@ -358,11 +410,12 @@ const Whiteboard = () => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <WelcomeMessage />
-        <PostList posts={posts} postSize={POST_SIZE} />
+        <PostList posts={posts} 
+ />
         <PostPreview
           isAddingPost={isAddingPost}
           previewPosition={previewPosition}
-          postSize={POST_SIZE}
+          postSize={newPost.type === "TEXT" ? TEXT_POST_SIZE : newPost.type === "CARD" ? CARD_POST_SIZE : newPost.type === "IMAGE" ? IMAGE_POST_SIZE : TEXT_POST_SIZE}
         />
       </div>
       <ControlButtons

@@ -22,7 +22,11 @@ import {
 
 import { Info } from "lucide-react";
 
-const PostList = ({ posts, postSize }) => {
+const TEXT_POST_SIZE = { width: 350, height: 70 };
+const CARD_POST_SIZE = { width: 200, height: 190 };
+const IMAGE_POST_SIZE = { width: 230, height: 190 };
+
+const PostList = ({ posts }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [votes, setVotes] = useState({ upvotes: 0 });
 
@@ -51,25 +55,66 @@ const PostList = ({ posts, postSize }) => {
           style={{
             left: post.x,
             top: post.y,
-            width: postSize.width,
-            height: postSize.height,
+            width:
+              post.type === "TEXT"
+                ? TEXT_POST_SIZE.width
+                : post.type === "CARD"
+                ? CARD_POST_SIZE.width
+                : post.type === "IMAGE"
+                ? IMAGE_POST_SIZE.width
+                : TEXT_POST_SIZE.width,
+            height:
+              post.type === "TEXT"
+                ? TEXT_POST_SIZE.height
+                : post.type === "CARD"
+                ? CARD_POST_SIZE.height
+                : post.type === "IMAGE"
+                ? IMAGE_POST_SIZE.height
+                : TEXT_POST_SIZE.height,
           }}
           onClick={() => handlePostClick(post)}
         >
           <div className="flex justify-between mb-2">
             <div className="bg-black text-white rounded-full px-2 py-0.5 text-sm font-bold">
-              TEXT
+              {post.type}
             </div>
             <div className="text-gray-500 text-sm">02:35:20</div>
           </div>
 
-          <div className="flex-1">
-            <p className="text-gray-800 line-clamp-2 text-sm">
-              {post.description.length > 40
-                ? `${post.description.substring(0, 40)}...`
-                : post.description}
-            </p>
-          </div>
+          {post.type === "CARD" && (
+            <>
+              <Image
+                src={post.cardImage}
+                alt="Card Image"
+                width={CARD_POST_SIZE.width}
+                height={CARD_POST_SIZE.height}
+              />
+              <p className="text-gray-800 line-clamp-2 text-sm">
+                {post.description.length > 100
+                  ? `${post.description.substring(0, 100)}...`
+                  : post.description}
+              </p>
+            </>
+          )}
+          {post.type === "IMAGE" && (
+            <div className="bg-white p-1">
+              <Image
+                src={post.cardImage}
+                alt="Post Image"
+                width={IMAGE_POST_SIZE.width}
+                height={IMAGE_POST_SIZE.height}
+              />
+            </div>
+          )}
+          {post.type === "TEXT" && (
+            <div className="flex-1">
+              <p className="text-gray-800 line-clamp-2 text-sm">
+                {post.description.length > 40
+                  ? `${post.description.substring(0, 40)}...`
+                  : post.description}
+              </p>
+            </div>
+          )}
         </div>
       ))}
 
@@ -138,7 +183,7 @@ const PostList = ({ posts, postSize }) => {
                           alt="Downvote"
                           width={24}
                           height={24}
-                          style={{ transform: 'rotate(180deg)' }}
+                          style={{ transform: "rotate(180deg)" }}
                         />
                       </button>
                     </TooltipTrigger>

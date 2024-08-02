@@ -1,6 +1,6 @@
 //@ts-nocheck
 
-const PostPreview = ({ isAddingPost, previewPosition, postSize }) => (
+const PostPreview = ({ isAddingPost, previewPosition, postSize, type }) => (
     <>
       {isAddingPost && (
         <div
