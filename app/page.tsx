@@ -225,12 +225,12 @@ const Whiteboard = () => {
     setViewportTransform((vt) => {
       if (e.ctrlKey) {
         const scaleChange = -e.deltaY * 0.001;
-        const newScale = Math.min(Math.max(vt.scale * (1 + scaleChange), 0.1), 5);
+        const newScale = Math.min(Math.max(vt.scale * (1 + scaleChange), 0.01), 5);
         const scaleRatio = newScale / vt.scale;
-
+  
         const mouseX = e.clientX;
         const mouseY = e.clientY;
-
+  
         return {
           scale: newScale,
           x: vt.x - (mouseX - vt.x) * (scaleRatio - 1),
