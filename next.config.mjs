@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "myreplyai.com",
+        hostname: "sellitboard.s3.eu-north-1.amazonaws.com",
         port: "",
       },
       

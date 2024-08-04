@@ -17,7 +17,7 @@ const PostPreview = ({ isAddingPost, previewPosition, postSize, post }) => (
           height: post.type === "TEXT" ? postSize.height : "0",
         }}
       >
-        {renderPostContent(post)}
+        {renderPostContent(post, isAddingPost)}
       </div>
     )}
 </>

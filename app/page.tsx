@@ -56,15 +56,27 @@ const Whiteboard = () => {
   useEffect(() => {
     axios.defaults.baseURL = process.env.NODE_ENV === 'development' ? 'http://localhost:8443/api' : 'https://sellitboard.com:8443/api';
   }, []);
-
-  const storePost = useCallback(async (post) => {
+  const storePost = useCallback(async (post, imageFile) => {
     try {
-      const response = await axios.post("/new", post);
-      console.log("post stored successfully:", response.data);
+      const formData = new FormData();
+      formData.append('post', JSON.stringify(post)); // Append post data as JSON string
+      if (imageFile) {
+        formData.append('image', imageFile); // Append the file
+      }
+  
+      const response = await axios.post("/new", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+  
+      return response.data.url;
     } catch (error) {
       console.error("Error storing post:", error);
+      throw error; // Ensure the error is propagated
     }
   }, []);
+  
 
   const fetchBoard = useCallback(async () => {
     try {
@@ -137,7 +149,6 @@ const Whiteboard = () => {
       setCursor("pointer");
     }
   }, [newPost]);
-
   const handleBoardClick = useCallback(
     async (e) => {
       if (isAddingPost && e.button === 0) {
@@ -145,7 +156,7 @@ const Whiteboard = () => {
         const postSize = POST_SIZES[newPost.type];
         const postX = x - postSize.width / 2;
         const postY = y - postSize.height / 2;
-
+  
         const isOverlapping = posts.some(
           (post) =>
             postX < post.x + postSize.width &&
@@ -153,7 +164,7 @@ const Whiteboard = () => {
             postY < post.y + postSize.height &&
             postY + postSize.height > post.y
         );
-
+  
         if (!isOverlapping) {
           const post = {
             id: Date.now(),
@@ -163,9 +174,10 @@ const Whiteboard = () => {
           };
           setPosts((prevPosts) => [...prevPosts, post]);
           setIsAddingPost(false);
-
+  
           try {
-            await storePost(post);
+            const url = await storePost(post, newPost.cardImage); // Pass the image file here
+            setPosts((prevPosts) => prevPosts.map((p) => (p.id === post.id ? { ...p, cardImage: url } : p)));
             setNewPost({ cardTitle: "", description: "", type: "TEXT", cardImage: null });
             setCursor("default");
           } catch (error) {
@@ -178,6 +190,7 @@ const Whiteboard = () => {
     },
     [isAddingPost, screenToBoardCoordinates, posts, viewportTransform, newPost, storePost]
   );
+  
 
   const handleMouseDown = useCallback((e) => {
     if (e.button === 1) {
@@ -208,6 +221,7 @@ const Whiteboard = () => {
       setPreviewPosition({ x: previewX, y: previewY });
     }
   }, [isPanning, isAddingPost, screenToBoardCoordinates, lastMousePos, viewportTransform, newPost.type]);
+  
 
   const handleMouseUp = useCallback(
     (e) => {
@@ -280,12 +294,12 @@ const Whiteboard = () => {
           break;
       }
     };
-
+  
     window.addEventListener("mousedown", handleWindowEvents);
     window.addEventListener("mousemove", handleWindowEvents);
     window.addEventListener("mouseup", handleWindowEvents);
     window.addEventListener("wheel", handleWindowEvents, { passive: false });
-
+  
     return () => {
       window.removeEventListener("mousedown", handleWindowEvents);
       window.removeEventListener("mousemove", handleWindowEvents);
@@ -293,6 +307,7 @@ const Whiteboard = () => {
       window.removeEventListener("wheel", handleWindowEvents);
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel]);
+  
 
   const boardStyle = useMemo(() => ({
     width: `${BOARD_SIZE.width}px`,

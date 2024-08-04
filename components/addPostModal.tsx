@@ -124,14 +124,12 @@ const AddPostModal = ({
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCardImage(file);
-        setNewPost((prev) => ({ ...prev, cardImage: reader.result })); // Store Base64 string
-      };
-      reader.readAsDataURL(file); // Read file as Base64
+      setCardImage(file); // Store the file object directly
+      setNewPost((prev) => ({ ...prev, cardImage: file, previewImage: URL.createObjectURL(file) })); // Store the file object, not Base64
     }
   };
+  
+
 
 
 
