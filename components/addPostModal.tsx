@@ -103,6 +103,13 @@ const AddPostModal = ({
     
   }, [selectedType]);
 
+  const handleNewPost = () => {
+    onAddPost();
+    setSelectedType("TEXT");
+    setCardTitle("");
+    setCardImage(null);
+  };
+
 
   const handleTypeChange = (value) => {
     setSelectedType(value);
@@ -209,7 +216,7 @@ const AddPostModal = ({
                 })
               }
               className="min-h-[100px]"
-              maxLength={selectedType === "TEXT" ? 200 : undefined}
+              maxLength={selectedType === "TEXT" ? 200 : selectedType === "CARD" ? 400 : undefined}
             />
             <p className="text-sm text-gray-500">
               {selectedType === "TEXT" ? "Max 200 characters" : ""}
@@ -218,7 +225,7 @@ const AddPostModal = ({
           ) : null}
         </div>
         <DialogFooter>
-          <Button onClick={onAddPost} className="w-full">
+          <Button onClick={handleNewPost} className="w-full">
             <PlusIcon className="w-4 h-4 mr-2" />
             Create Post
           </Button>

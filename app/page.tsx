@@ -25,11 +25,10 @@ import PostList from "@/components/postList";
 import PostPreview from "@/components/postPreview";
 import ControlButtons from "@/components/controlButtons";
 import AddPostModal from "@/components/addPostModal";
+import _ from "lodash";
 
 const BOARD_SIZE = { width: 250000, height: 250000 };
-const TEXT_POST_SIZE = { width: 350, height: 70 };
-const CARD_POST_SIZE = { width: 200, height: 190 };
-const IMAGE_POST_SIZE = { width: 230, height: 190 };
+
 
 const Whiteboard = () => {
   const [posts, setPosts] = useState([]);
@@ -46,25 +45,30 @@ const Whiteboard = () => {
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [cursor, setCursor] = useState("default");
 
+  const POST_SIZES = useMemo(() => ({
+    TEXT: { width: 350, height: 40 },
+    CARD: { width: 250, height: 0 },
+    IMAGE: { width: 175, height: 190 },
+  }), []);
+
   const boardRef = useRef(null);
 
-  const storePost = async (post) => {
+  useEffect(() => {
+    axios.defaults.baseURL = process.env.NODE_ENV === 'development' ? 'http://localhost:8443/api' : 'https://sellitboard.com:8443/api';
+  }, []);
+
+  const storePost = useCallback(async (post) => {
     try {
-      const response = await axios.post(
-        "https://sellitboard.com:8443/api/new",
-        post
-      );
+      const response = await axios.post("/new", post);
       console.log("post stored successfully:", response.data);
     } catch (error) {
       console.error("Error storing post:", error);
     }
-  };
+  }, []);
 
   const fetchBoard = useCallback(async () => {
     try {
-      const response = await axios.get(
-        "https://sellitboard.com:8443/api/boards"
-      );
+      const response = await axios.get("/boards");
       setPosts(response.data);
     } catch (error) {
       console.error("Error fetching board:", error);
@@ -76,10 +80,7 @@ const Whiteboard = () => {
 
     const socket = new WebSocket("wss://sellitboard.com:8443");
 
-    socket.onopen = () => {
-      console.log("WebSocket connection established");
-    };
-
+    socket.onopen = () => console.log("WebSocket connection established");
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setPosts((prevPosts) => {
@@ -89,82 +90,51 @@ const Whiteboard = () => {
         return prevPosts;
       });
     };
+    socket.onerror = (error) => console.error("WebSocket error:", error);
+    socket.onclose = () => console.log("WebSocket connection closed");
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    socket.onclose = () => {
-      console.log("WebSocket connection closed");
-    };
-
-    return () => {
-      socket.close();
-    };
+    return () => socket.close();
   }, [fetchBoard]);
 
-  useEffect(() => {
+  const initializeViewport = useCallback(() => {
     if (typeof window !== "undefined") {
-      const INITIAL_VIEWPORT = {
+      return {
         x: -25000 + window.innerWidth / 2,
         y: -25000 + window.innerHeight / 2,
         scale: 1,
       };
-      setViewportTransform(INITIAL_VIEWPORT);
     }
+    return { x: 0, y: 0, scale: 1 };
   }, []);
 
+  useEffect(() => {
+    setViewportTransform(initializeViewport());
+  }, [initializeViewport]);
+
   const resetViewport = useCallback(() => {
-    if (typeof window !== "undefined") {
-      const INITIAL_VIEWPORT = {
-        x: -25000 + window.innerWidth / 2,
-        y: -25000 + window.innerHeight / 2,
-        scale: 1,
-      };
-      setViewportTransform(INITIAL_VIEWPORT);
-    }
-  }, []);
+    setViewportTransform(initializeViewport());
+  }, [initializeViewport]);
 
   const screenToBoardCoordinates = useCallback(
     (screenX, screenY) => {
       const boardRect = boardRef.current.getBoundingClientRect();
       return {
-        x:
-          (screenX - boardRect.left) / viewportTransform.scale -
-          viewportTransform.x,
-        y:
-          (screenY - boardRect.top) / viewportTransform.scale -
-          viewportTransform.y,
+        x: (screenX - boardRect.left) / viewportTransform.scale - viewportTransform.x,
+        y: (screenY - boardRect.top) / viewportTransform.scale - viewportTransform.y,
       };
     },
     [viewportTransform]
   );
 
-  const startAddingPost = () => setIsModalOpen(true);
+  const startAddingPost = useCallback(() => setIsModalOpen(true), []);
 
   const handleAddPost = useCallback(() => {
-    switch (newPost.type) {
-      case "TEXT":
-        if (newPost.description) {
-          setIsAddingPost(true);
-          setIsModalOpen(false);
-          setCursor("pointer");
-        }
-        break;
-      case "CARD":
-        if (newPost.cardTitle && newPost.description) {
-          setIsAddingPost(true);
-          setIsModalOpen(false);
-          setCursor("pointer");
-        }
-        break;
-      case "IMAGE":
-        if (newPost.cardImage) {
-          setIsAddingPost(true);
-          setIsModalOpen(false);
-          setCursor("pointer");
-        }
-        break;
+    if ((newPost.type === "TEXT" && newPost.description) ||
+        (newPost.type === "CARD" && newPost.cardTitle && newPost.description) ||
+        (newPost.type === "IMAGE" && newPost.cardImage)) {
+      setIsAddingPost(true);
+      setIsModalOpen(false);
+      setCursor("pointer");
     }
   }, [newPost]);
 
@@ -172,21 +142,7 @@ const Whiteboard = () => {
     async (e) => {
       if (isAddingPost && e.button === 0) {
         const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
-        let postSize;
-        switch (newPost.type) {
-          case "TEXT":
-            postSize = TEXT_POST_SIZE;
-            break;
-          case "CARD":
-            postSize = CARD_POST_SIZE;
-            break;
-          case "IMAGE":
-            postSize = IMAGE_POST_SIZE;
-            break;
-          default:
-            console.error("Unknown post type");
-            return;
-        }
+        const postSize = POST_SIZES[newPost.type];
         const postX = x - postSize.width / 2;
         const postY = y - postSize.height / 2;
 
@@ -207,29 +163,20 @@ const Whiteboard = () => {
           };
           setPosts((prevPosts) => [...prevPosts, post]);
           setIsAddingPost(false);
-          storePost(post)
-            .then(() => {
-              setNewPost({ cardTitle: "", description: "" });
-              setCursor("default");
-            })
-            .catch((error) => {
-              console.error("Error storing post:", error);
-            });
+
+          try {
+            await storePost(post);
+            setNewPost({ cardTitle: "", description: "", type: "TEXT", cardImage: null });
+            setCursor("default");
+          } catch (error) {
+            console.error("Error storing post:", error);
+          }
         } else {
           console.log("Cannot place post here due to overlap");
         }
       }
     },
-    [
-      isAddingPost,
-      screenToBoardCoordinates,
-      posts,
-      viewportTransform,
-      newPost,
-      TEXT_POST_SIZE,
-      CARD_POST_SIZE,
-      IMAGE_POST_SIZE,
-    ]
+    [isAddingPost, screenToBoardCoordinates, posts, viewportTransform, newPost, storePost]
   );
 
   const handleMouseDown = useCallback((e) => {
@@ -241,41 +188,26 @@ const Whiteboard = () => {
     }
   }, []);
 
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (isPanning) {
-        const dx = e.clientX - lastMousePos.x;
-        const dy = e.clientY - lastMousePos.y;
-        setViewportTransform((vt) => ({
-          ...vt,
-          x: vt.x + dx / (vt.scale * 2),
-          y: vt.y + dy / (vt.scale * 2),
-        }));
-        setLastMousePos({ x: e.clientX, y: e.clientY });
-      }
-
-      if (isAddingPost) {
-        const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
-        let postSize = TEXT_POST_SIZE;
-        if (newPost.type === "CARD") {
-          postSize = CARD_POST_SIZE;
-        } else if (newPost.type === "IMAGE") {
-          postSize = IMAGE_POST_SIZE;
-        }
-        setPreviewPosition({
-          x: x - postSize.width / 2 + viewportTransform.x,
-          y: y - postSize.height / 2 + viewportTransform.y,
-        });
-      }
-    },
-    [
-      isPanning,
-      isAddingPost,
-      screenToBoardCoordinates,
-      lastMousePos,
-      viewportTransform,
-    ]
-  );
+  const handleMouseMove = useCallback((e) => {
+    if (isPanning) {
+      const dx = e.clientX - lastMousePos.x;
+      const dy = e.clientY - lastMousePos.y;
+      setViewportTransform((vt) => ({
+        ...vt,
+        x: vt.x + dx / (vt.scale * 2),
+        y: vt.y + dy / (vt.scale * 2),
+      }));
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
+  
+    if (isAddingPost) {
+      const { x, y } = screenToBoardCoordinates(e.clientX, e.clientY);
+      const postSize = POST_SIZES[newPost.type];
+      const previewX = x - postSize.width / 2 + viewportTransform.x;
+      const previewY = y - postSize.height / 2 + viewportTransform.y;
+      setPreviewPosition({ x: previewX, y: previewY });
+    }
+  }, [isPanning, isAddingPost, screenToBoardCoordinates, lastMousePos, viewportTransform, newPost.type]);
 
   const handleMouseUp = useCallback(
     (e) => {
@@ -333,10 +265,20 @@ const Whiteboard = () => {
 
   useEffect(() => {
     const handleWindowEvents = (e) => {
-      if (e.type === "mousedown") handleMouseDown(e);
-      if (e.type === "mousemove") handleMouseMove(e);
-      if (e.type === "mouseup") handleMouseUp(e);
-      if (e.type === "wheel") handleWheel(e);
+      switch (e.type) {
+        case "mousedown":
+          handleMouseDown(e);
+          break;
+        case "mousemove":
+          handleMouseMove(e);
+          break;
+        case "mouseup":
+          handleMouseUp(e);
+          break;
+        case "wheel":
+          handleWheel(e);
+          break;
+      }
     };
 
     window.addEventListener("mousedown", handleWindowEvents);
@@ -352,18 +294,24 @@ const Whiteboard = () => {
     };
   }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel]);
 
+  const boardStyle = useMemo(() => ({
+    width: `${BOARD_SIZE.width}px`,
+    height: `${BOARD_SIZE.height}px`,
+    transform: `translate(${viewportTransform.x}px, ${viewportTransform.y}px) scale(${viewportTransform.scale})`,
+    transformOrigin: "0 0",
+    cursor: cursor,
+  }), [viewportTransform, cursor]);
+
+  const checkeredStyle = useMemo(() => ({
+    backgroundSize: `${20 * viewportTransform.scale}px ${20 * viewportTransform.scale}px`,
+    backgroundPosition: `${viewportTransform.x * viewportTransform.scale}px ${viewportTransform.y * viewportTransform.scale}px`,
+  }), [viewportTransform]);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
       <div
         className="absolute inset-0 bg-checkered opacity-10"
-        style={{
-          backgroundSize: `${20 * viewportTransform.scale}px ${
-            20 * viewportTransform.scale
-          }px`,
-          backgroundPosition: `${
-            viewportTransform.x * viewportTransform.scale
-          }px ${viewportTransform.y * viewportTransform.scale}px`,
-        }}
+        style={checkeredStyle}
       />
       <div
         className="absolute pointer-events-none"
@@ -373,21 +321,14 @@ const Whiteboard = () => {
           transform: `translate(${viewportTransform.x}px, ${viewportTransform.y}px) scale(${viewportTransform.scale})`,
           transformOrigin: "0 0",
           border: "20px solid",
-          borderImage:
-            "repeating-conic-gradient(#808080 0 90deg, #ffffff 0 180deg) 40",
+          borderImage: "repeating-conic-gradient(#808080 0 90deg, #ffffff 0 180deg) 40",
           borderImageSlice: "40",
         }}
       />
       <div
         ref={boardRef}
         className="absolute"
-        style={{
-          width: `${BOARD_SIZE.width}px`,
-          height: `${BOARD_SIZE.height}px`,
-          transform: `translate(${viewportTransform.x}px, ${viewportTransform.y}px) scale(${viewportTransform.scale})`,
-          transformOrigin: "0 0",
-          cursor: cursor,
-        }}
+        style={boardStyle}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={(e) => {
@@ -401,7 +342,8 @@ const Whiteboard = () => {
         <PostPreview
           isAddingPost={isAddingPost}
           previewPosition={previewPosition}
-          postSize={newPost.type === "TEXT" ? TEXT_POST_SIZE : newPost.type === "CARD" ? CARD_POST_SIZE : newPost.type === "IMAGE" ? IMAGE_POST_SIZE : TEXT_POST_SIZE}
+          postSize={POST_SIZES[newPost.type]}
+          post={newPost}
         />
       </div>
       <ControlButtons

@@ -1,31 +1,20 @@
 // @ts-nocheck
+"use client";
 import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import Image from "next/image";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
+import { renderPostContent } from "@/components/renderPostContent";
+
 import upVoteIcon from "../public/upvote.svg";
 import shareIcon from "../public/share.svg";
-import infoIcon from "../public/info.svg"; // Import the info icon
-import Image from "next/image";
+import infoIcon from "../public/info.svg"; 
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-import { Info } from "lucide-react";
-
-const TEXT_POST_SIZE = { width: 350, height: 70 };
-const CARD_POST_SIZE = { width: 200, height: 190 };
-const IMAGE_POST_SIZE = { width: 230, height: 190 };
-
+const TEXT_POST_SIZE = { width: 350, height: 40 };
+const CARD_POST_SIZE = { width: 250, height: 0 };
+const IMAGE_SIZE = { width: 500, height: 200 };
+const IMAGE_POST_SIZE = { width: 175, height: 190 };
 const PostList = ({ posts }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [votes, setVotes] = useState({ upvotes: 0 });
@@ -50,71 +39,20 @@ const PostList = ({ posts }) => {
     <>
       {posts.map((post) => (
         <div
-          className="absolute p-2 px-3 bg-white shadow-lg rounded-lg cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-105"
+          className="absolute rounded-lg cursor-pointer transition-all duration-200 hover:shadow-2xl hover:scale-105 text-center gap-4"
           key={post.id}
           style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: post.type === "IMAGE" ? "0" : "8px",
+            wordBreak: "break-word",
             left: post.x,
             top: post.y,
-            width:
-              post.type === "TEXT"
-                ? TEXT_POST_SIZE.width
-                : post.type === "CARD"
-                ? CARD_POST_SIZE.width
-                : post.type === "IMAGE"
-                ? IMAGE_POST_SIZE.width
-                : TEXT_POST_SIZE.width,
-            height:
-              post.type === "TEXT"
-                ? TEXT_POST_SIZE.height
-                : post.type === "CARD"
-                ? CARD_POST_SIZE.height
-                : post.type === "IMAGE"
-                ? IMAGE_POST_SIZE.height
-                : TEXT_POST_SIZE.height,
+            width: post.type === "TEXT" ? "fit-content" : post.type === "CARD" ? CARD_POST_SIZE.width : post.type === "IMAGE" ? IMAGE_POST_SIZE.width : TEXT_POST_SIZE.width,
+            height: post.type === "TEXT" ? TEXT_POST_SIZE.height : post.type === "CARD" ? "0" : post.type === "IMAGE" ? "0" : TEXT_POST_SIZE.height,
           }}
           onClick={() => handlePostClick(post)}
         >
-          <div className="flex justify-between mb-2">
-            <div className="bg-black text-white rounded-full px-2 py-0.5 text-sm font-bold">
-              {post.type}
-            </div>
-            <div className="text-gray-500 text-sm">02:35:20</div>
-          </div>
-
-          {post.type === "CARD" && (
-            <>
-              <Image
-                src={post.cardImage}
-                alt="Card Image"
-                width={CARD_POST_SIZE.width}
-                height={CARD_POST_SIZE.height}
-              />
-              <p className="text-gray-800 line-clamp-2 text-sm">
-                {post.description.length > 100
-                  ? `${post.description.substring(0, 100)}...`
-                  : post.description}
-              </p>
-            </>
-          )}
-          {post.type === "IMAGE" && (
-            <div className="bg-white p-1">
-              <Image
-                src={post.cardImage}
-                alt="Post Image"
-                width={IMAGE_POST_SIZE.width}
-                height={IMAGE_POST_SIZE.height}
-              />
-            </div>
-          )}
-          {post.type === "TEXT" && (
-            <div className="flex-1">
-              <p className="text-gray-800 line-clamp-2 text-sm">
-                {post.description.length > 40
-                  ? `${post.description.substring(0, 40)}...`
-                  : post.description}
-              </p>
-            </div>
-          )}
+          {renderPostContent(post)}
         </div>
       ))}
 
@@ -125,9 +63,8 @@ const PostList = ({ posts }) => {
               <DialogTitle>
                 <div className="flex justify-between mb-2">
                   <div className="bg-black text-white rounded-full px-2 py-0.5 text-sm font-bold flex items-center">
-                    TEXT
+                    {selectedPost.type}
                   </div>
-
                   <div className="flex space-x-2 items-center text-sm text-gray-500 font-bold">
                     <div className="text-gray-500 text-sm">02:35:20</div>
                     <TooltipProvider>
@@ -148,11 +85,7 @@ const PostList = ({ posts }) => {
               </DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1">
-              <p className="text-gray-800 text-md">
-                {selectedPost.description}
-              </p>
-            </div>
+            {renderPostContent(selectedPost)}
 
             <div className="flex justify-between mb-2">
               <div className="flex space-x-2 items-center text-sm text-gray-500 font-bold mr-2">
